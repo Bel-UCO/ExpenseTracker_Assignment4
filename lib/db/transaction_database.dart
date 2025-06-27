@@ -196,6 +196,15 @@ class TransactionDatabase {
   // CLOSE DATABASE
   // ========================
 
+  Future<void> debugPrintAllTransactions() async {
+    final db = await instance.database;
+    final rows = await db.query('transactions');
+    print("=== ALL TRANSACTIONS ===");
+    for (var row in rows) {
+      print(row);
+    }
+  }
+
   Future close() async {
     final db = await instance.database;
     db.close();

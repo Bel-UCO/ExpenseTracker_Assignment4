@@ -61,15 +61,11 @@ class _AddTransactionViewState extends State<AddTransactionView> {
       amount: _amount,
       date: _selectedDate,
       categoryId: _selectedCategoryId!,
-      userId: _selectedUserId,
+      userId: widget.userId, // ✅ PENTING!
     );
 
-    final viewModel = Provider.of<TransactionViewModel>(context, listen: false);
-    if (widget.existingTransaction == null) {
-      await viewModel.addTransaction(txn);
-    } else {
-      await viewModel.updateTransaction(txn);
-    }
+    await Provider.of<TransactionViewModel>(context, listen: false)
+        .addTransaction(txn);
     Navigator.pop(context);
   }
 

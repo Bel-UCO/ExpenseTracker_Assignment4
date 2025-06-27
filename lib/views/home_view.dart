@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../db/transaction_database.dart';
 import '../models/user_model.dart';
 import 'transaction_list_view.dart';
+import '../models/user_with_total.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({Key? key}) : super(key: key);
@@ -18,6 +19,8 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _loadUsers();
+
+    TransactionDatabase.instance.debugPrintAllTransactions(); // debug
   }
 
   Future<void> _loadUsers() async {
@@ -64,39 +67,38 @@ class _HomeViewState extends State<HomeView> {
                       itemBuilder: (_, i) {
                         final user = _users[i];
                         return FutureBuilder<Map<String, double>>(
-                          future: _getSummary(user.id!),
-                          builder: (context, snapshot) {
-                            final income = snapshot.data?['income'] ?? 0.0;
-                            final expense = snapshot.data?['expense'] ?? 0.0;
+                            future: _getSummary(user.id!),
+                            builder: (context, snapshot) {
+                              final income = snapshot.data?['income'] ?? 0.0;
+                              final expense = snapshot.data?['expense'] ?? 0.0;
+                              final balance = income - expense;
 
-                            return Card(
-                              child: ListTile(
-                                title: Text(user.name),
-                                subtitle: Row(
-                                  children: [
-                                    Text('Income: ${income.toStringAsFixed(0)}',
-                                        style: TextStyle(color: Colors.green)),
-                                    SizedBox(width: 16),
-                                    Text(
-                                        'Expense: ${expense.toStringAsFixed(0)}',
-                                        style: TextStyle(color: Colors.red)),
-                                  ],
-                                ),
-                                trailing: Icon(Icons.arrow_forward_ios),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => TransactionListView(
-                                        userId: user.id!,
-                                      ),
+                              return Card(
+                                child: ListTile(
+                                  title: Text(user.name),
+                                  subtitle: Text(
+                                    'Balance: ${balance.toStringAsFixed(0)}',
+                                    style: TextStyle(
+                                      color: balance >= 0
+                                          ? Colors.green
+                                          : Colors.red,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        );
+                                  ),
+                                  trailing: Icon(Icons.arrow_forward_ios),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TransactionListView(
+                                            userId: user.id!),
+                                      ),
+                                    ).then((_) =>
+                                        _loadUsers()); // Refresh after returning
+                                  },
+                                ),
+                              );
+                            });
                       },
                     ),
             ),

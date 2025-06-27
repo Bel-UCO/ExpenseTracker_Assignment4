@@ -16,6 +16,7 @@ class TransactionViewModel extends ChangeNotifier {
   Future<void> addTransaction(TransactionModel txn) async {
     await TransactionDatabase.instance.createTransaction(txn);
     await fetchTransactionsByUser(txn.userId); // refresh otomatis
+    notifyListeners();
   }
 
   Future<void> updateTransaction(TransactionModel txn) async {
