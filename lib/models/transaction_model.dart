@@ -15,6 +15,24 @@ class TransactionModel {
     required this.userId, // 👈 wajib untuk multi-user
   });
 
+  TransactionModel copyWith({
+    int? id,
+    String? type,
+    double? amount,
+    DateTime? date,
+    int? categoryId,
+    int? userId,
+  }) {
+    return TransactionModel(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      categoryId: categoryId ?? this.categoryId,
+      userId: userId ?? this.userId,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

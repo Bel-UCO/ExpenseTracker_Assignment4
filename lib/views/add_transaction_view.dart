@@ -33,34 +33,49 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-
-    if (widget.existingTransaction != null) {
-      final txn = widget.existingTransaction!;
-      _type = txn.type;
-      _amount = txn.amount;
-      _selectedCategoryId = txn.categoryId;
-      _selectedDate = txn.date;
-    }
+    _loadCategories(); // hanya satu fungsi, konsisten
   }
 
   Future<void> _loadCategories() async {
     final cats = await TransactionDatabase.instance.readAllCategories();
+
+    if (widget.existingTransaction != null &&
+        !cats.any((c) => c.id == widget.existingTransaction!.categoryId)) {
+      // Tambahkan kategori palsu "Unknown"
+      cats.insert(
+        0,
+        CategoryModel(
+          id: widget.existingTransaction!.categoryId,
+          name: 'Unknown Category',
+        ),
+      );
+    }
+
     setState(() {
       _categories = cats;
+      if (widget.existingTransaction != null) {
+        final txn = widget.existingTransaction!;
+        _type = txn.type;
+        _amount = txn.amount;
+        _selectedDate = txn.date;
+        _selectedCategoryId = txn.categoryId;
+      }
     });
   }
 
   void _submit() async {
-    if (!_formKey.currentState!.validate() || _selectedCategoryId == null) {
+    final isValid = _formKey.currentState!.validate();
+    if (!isValid || _selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please select a category')),
       );
       return;
     }
+
     _formKey.currentState!.save();
 
     final txn = TransactionModel(
+      id: widget.existingTransaction?.id,
       type: _type,
       amount: _amount,
       date: _selectedDate,
@@ -68,8 +83,14 @@ class _AddTransactionViewState extends State<AddTransactionView> {
       userId: widget.userId,
     );
 
-    await Provider.of<TransactionViewModel>(context, listen: false)
-        .addTransaction(txn);
+    if (widget.existingTransaction != null) {
+      await Provider.of<TransactionViewModel>(context, listen: false)
+          .updateTransaction(txn);
+    } else {
+      await Provider.of<TransactionViewModel>(context, listen: false)
+          .addTransaction(txn);
+    }
+
     Navigator.pop(context);
   }
 
@@ -92,6 +113,9 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                 decoration: InputDecoration(labelText: 'Type'),
               ),
               TextFormField(
+                initialValue: widget.existingTransaction != null
+                    ? widget.existingTransaction!.amount.toString()
+                    : null,
                 decoration: InputDecoration(labelText: 'Amount'),
                 keyboardType: TextInputType.number,
                 validator: (val) =>
@@ -99,14 +123,20 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                 onSaved: (val) => _amount = double.parse(val!),
               ),
               DropdownButtonFormField<int>(
-                value: _selectedCategoryId,
+                value: _categories.any((cat) => cat.id == _selectedCategoryId)
+                    ? _selectedCategoryId
+                    : null,
                 items: _categories.map((cat) {
-                  return DropdownMenuItem(value: cat.id, child: Text(cat.name));
+                  return DropdownMenuItem<int>(
+                    value: cat.id,
+                    child: Text(cat.name),
+                  );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedCategoryId = val),
-                decoration: InputDecoration(labelText: 'Category'),
                 validator: (val) =>
                     val == null ? 'Please select a category' : null,
+                onSaved: (val) => _selectedCategoryId = val,
+                decoration: InputDecoration(labelText: 'Category'),
               ),
               SizedBox(height: 10),
               Row(
@@ -125,9 +155,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                         lastDate: DateTime.now(),
                       );
                       if (picked != null) {
-                        setState(() {
-                          _selectedDate = picked;
-                        });
+                        setState(() => _selectedDate = picked);
                       }
                     },
                   ),
