@@ -58,9 +58,9 @@ class TransactionDatabase {
     ''');
 
     // Tambah kategori default
-    await db.insert('categories', {'name': 'Gaji'});
-    await db.insert('categories', {'name': 'Belanja'});
-    await db.insert('categories', {'name': 'Transportasi'});
+    await db.insert('categories', {'name': 'Salary'});
+    await db.insert('categories', {'name': 'Shopping'});
+    await db.insert('categories', {'name': 'Transportation'});
   }
 
   // ========================
@@ -126,6 +126,16 @@ class TransactionDatabase {
     }
   }
 
+  Future<int> updateUser(UserModel user) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
+
   Future<int> deleteUser(int id) async {
     final db = await instance.database;
     return await db.delete(
@@ -155,9 +165,15 @@ class TransactionDatabase {
     WHERE userId = ?
   ''', [userId]);
 
+    final row = result.first;
+
+    final income = (row['totalIncome'] ?? 0);
+    final expense = (row['totalExpense'] ?? 0);
+
+    // Konversi aman ke double
     return {
-      'income': result.first['totalIncome'] as double? ?? 0.0,
-      'expense': result.first['totalExpense'] as double? ?? 0.0,
+      'income': income is int ? income.toDouble() : income as double,
+      'expense': expense is int ? expense.toDouble() : expense as double,
     };
   }
 

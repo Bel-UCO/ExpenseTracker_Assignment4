@@ -11,9 +11,11 @@ class AddTransactionView extends StatefulWidget {
   final int userId;
   final TransactionModel? existingTransaction;
 
-  const AddTransactionView(
-      {Key? key, required this.userId, this.existingTransaction})
-      : super(key: key);
+  const AddTransactionView({
+    Key? key,
+    required this.userId,
+    this.existingTransaction,
+  }) : super(key: key);
 
   @override
   State<AddTransactionView> createState() => _AddTransactionViewState();
@@ -24,7 +26,6 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   String _type = 'Income';
   double _amount = 0;
   int? _selectedCategoryId;
-  late int _selectedUserId;
   DateTime _selectedDate = DateTime.now();
 
   List<CategoryModel> _categories = [];
@@ -32,7 +33,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   @override
   void initState() {
     super.initState();
-    _selectedUserId = widget.userId;
+    _loadCategories();
 
     if (widget.existingTransaction != null) {
       final txn = widget.existingTransaction!;
@@ -41,10 +42,9 @@ class _AddTransactionViewState extends State<AddTransactionView> {
       _selectedCategoryId = txn.categoryId;
       _selectedDate = txn.date;
     }
-    _loadDropdownData();
   }
 
-  Future<void> _loadDropdownData() async {
+  Future<void> _loadCategories() async {
     final cats = await TransactionDatabase.instance.readAllCategories();
     setState(() {
       _categories = cats;
@@ -52,8 +52,12 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   }
 
   void _submit() async {
-    if (!_formKey.currentState!.validate() || _selectedCategoryId == null)
+    if (!_formKey.currentState!.validate() || _selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a category')),
+      );
       return;
+    }
     _formKey.currentState!.save();
 
     final txn = TransactionModel(
@@ -61,7 +65,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
       amount: _amount,
       date: _selectedDate,
       categoryId: _selectedCategoryId!,
-      userId: widget.userId, // ✅ PENTING!
+      userId: widget.userId,
     );
 
     await Provider.of<TransactionViewModel>(context, listen: false)
@@ -101,6 +105,8 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedCategoryId = val),
                 decoration: InputDecoration(labelText: 'Category'),
+                validator: (val) =>
+                    val == null ? 'Please select a category' : null,
               ),
               SizedBox(height: 10),
               Row(
