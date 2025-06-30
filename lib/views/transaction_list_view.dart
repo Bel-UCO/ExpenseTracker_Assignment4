@@ -60,6 +60,8 @@ class _TransactionListViewState extends State<TransactionListView> {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<TransactionViewModel>(context);
     final transactions = viewModel.transactions;
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ');
 
     final incomeTotal = transactions
         .where((e) => e.type == 'Income')
@@ -132,7 +134,7 @@ class _TransactionListViewState extends State<TransactionListView> {
                               txn.type == 'Income' ? Colors.green : Colors.red,
                         ),
                         title: Text(
-                            '${txn.type}: ${txn.amount.toStringAsFixed(0)}'),
+                            '${txn.type}: ${currencyFormatter.format(txn.amount)}'),
                         subtitle:
                             Text(DateFormat('dd MMM yyyy').format(txn.date)),
                         trailing: Row(
@@ -228,10 +230,10 @@ class SummaryCard extends StatelessWidget {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            SummaryRow(label: 'Income', value: income, color: Colors.green),
-            SummaryRow(label: 'Expense', value: expense, color: Colors.red),
-            Divider(),
             SummaryRow(label: 'Balance', value: balance, color: Colors.blue),
+            Divider(),
+            SummaryRow(label: 'Expense', value: expense, color: Colors.red),
+            SummaryRow(label: 'Income', value: income, color: Colors.green),
           ],
         ),
       ),
@@ -252,15 +254,19 @@ class SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ');
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(label,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           Spacer(),
           Text(
-            value.toStringAsFixed(0),
-            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            currencyFormatter.format(value),
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ],
       ),

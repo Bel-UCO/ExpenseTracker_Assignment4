@@ -104,14 +104,37 @@ class _AddTransactionViewState extends State<AddTransactionView> {
           key: _formKey,
           child: Column(
             children: [
-              DropdownButtonFormField<String>(
-                value: _type,
-                items: ['Income', 'Expense'].map((val) {
-                  return DropdownMenuItem(value: val, child: Text(val));
-                }).toList(),
-                onChanged: (val) => setState(() => _type = val!),
-                decoration: InputDecoration(labelText: 'Type'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => setState(() => _type = 'Income'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            _type == 'Income' ? Colors.green : Colors.grey[600],
+                        foregroundColor:
+                            _type == 'Income' ? Colors.white : Colors.white,
+                      ),
+                      child: Text('Income'),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => setState(() => _type = 'Expense'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            _type == 'Expense' ? Colors.red : Colors.grey[600],
+                        foregroundColor:
+                            _type == 'Expense' ? Colors.white : Colors.white,
+                      ),
+                      child: Text('Expense'),
+                    ),
+                  ),
+                ],
               ),
+              SizedBox(height: 16),
               TextFormField(
                 initialValue: widget.existingTransaction != null
                     ? widget.existingTransaction!.amount.toString()
@@ -122,6 +145,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                     val == null || val.isEmpty ? 'Required' : null,
                 onSaved: (val) => _amount = double.parse(val!),
               ),
+              SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _categories.any((cat) => cat.id == _selectedCategoryId)
                     ? _selectedCategoryId
@@ -145,8 +169,8 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                     "Date: ${DateFormat('yyyy-MM-dd').format(_selectedDate)}",
                   ),
                   Spacer(),
-                  ElevatedButton(
-                    child: Text("Select"),
+                  IconButton(
+                    icon: Icon(Icons.calendar_month),
                     onPressed: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -162,9 +186,12 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                 ],
               ),
               Spacer(),
-              ElevatedButton(
-                child: Text("Save"),
-                onPressed: _submit,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  child: Text("Save"),
+                ),
               ),
             ],
           ),
