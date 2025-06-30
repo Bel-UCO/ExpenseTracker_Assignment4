@@ -3,6 +3,8 @@ import '../db/transaction_database.dart';
 import '../models/user_model.dart';
 import 'transaction_list_view.dart';
 import 'category_view.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({Key? key}) : super(key: key);
@@ -29,9 +31,30 @@ class _HomeViewState extends State<HomeView> {
   Future<void> _addUser() async {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
-    await TransactionDatabase.instance.createUser(UserModel(name: name));
-    _controller.clear();
-    _loadUsers();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Add User'),
+        content: Text('Are you sure you want to add "$name"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await TransactionDatabase.instance.createUser(UserModel(name: name));
+      _controller.clear();
+      _loadUsers();
+    }
   }
 
   void _editUserDialog(UserModel user) {
@@ -95,12 +118,15 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ');
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Users & Balance'),
         actions: [
           IconButton(
-            icon: Icon(Icons.category),
+            icon: Icon(Icons.settings_rounded),
             onPressed: () {
               Navigator.push(
                 context,
@@ -139,42 +165,68 @@ class _HomeViewState extends State<HomeView> {
                             final expense = snapshot.data?['expense'] ?? 0.0;
                             final balance = income - expense;
 
-                            return Card(
-                              child: ListTile(
-                                title: Text(user.name),
-                                subtitle: Text(
-                                  'Balance: ${balance.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    color: balance >= 0
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontWeight: FontWeight.bold,
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 3.0),
+                              child: Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                clipBehavior:
+                                    Clip.antiAlias, // agar radius clip
+                                child: Slidable(
+                                  key: ValueKey(user.id),
+                                  endActionPane: ActionPane(
+                                    motion:
+                                        const DrawerMotion(), // atau const StretchMotion()
+                                    extentRatio:
+                                        0.5, // Total lebar action (0.5 = 50% of tile)
+                                    children: [
+                                      SlidableAction(
+                                        onPressed: (_) => _editUserDialog(user),
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                        icon: Icons.edit,
+                                        label: 'Edit',
+                                        borderRadius: BorderRadius.zero,
+                                      ),
+                                      SlidableAction(
+                                        onPressed: (_) => _deleteUser(user.id!),
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        icon: Icons.delete,
+                                        label: 'Delete',
+                                        borderRadius: BorderRadius.zero,
+                                      ),
+                                    ],
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 4),
+                                    title: Text(user.name),
+                                    subtitle: Text(
+                                      'Balance: ${currencyFormatter.format(balance)}',
+                                      style: TextStyle(
+                                        color: balance >= 0
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    trailing:
+                                        Icon(Icons.arrow_forward_ios, size: 16),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => TransactionListView(
+                                              userId: user.id!),
+                                        ),
+                                      ).then((_) => _loadUsers());
+                                    },
                                   ),
                                 ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon:
-                                          Icon(Icons.edit, color: Colors.blue),
-                                      onPressed: () => _editUserDialog(user),
-                                    ),
-                                    IconButton(
-                                      icon:
-                                          Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () => _deleteUser(user.id!),
-                                    ),
-                                  ],
-                                ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          TransactionListView(userId: user.id!),
-                                    ),
-                                  ).then((_) => _loadUsers());
-                                },
                               ),
                             );
                           },
